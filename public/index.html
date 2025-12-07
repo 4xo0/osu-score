@@ -1,0 +1,596 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>osu! Score Retriever</title>
+    <link href="https://fonts.googleapis.com/css2?family=Varela+Round&family=Exo+2:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #181a1b;
+            --surface-color: #2a2e30;
+            --surface-hover: #33383b;
+            --primary-color: #ff66aa;
+            --primary-hover: #ff88bb;
+            --secondary-color: #66ccff;
+            --text-color: #f0f0f0;
+            --text-muted: #a0a0a0;
+            --border-radius: 12px;
+            --shadow: 0 8px 24px rgba(0,0,0,0.4);
+            --rank-ss: #d4af37;
+            --rank-s: #ffd700;
+            --rank-a: #2ea043;
+            --rank-b: #3498db;
+            --rank-c: #9b59b6;
+            --rank-d: #e74c3c;
+            --rank-f: #7f8c8d;
+        }
+
+        body {
+            font-family: 'Exo 2', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 40px 20px;
+            min-height: 100vh;
+            box-sizing: border-box;
+            background-image: radial-gradient(circle at top right, #2a1a20 0%, transparent 40%),
+                              radial-gradient(circle at bottom left, #1a202a 0%, transparent 40%);
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 40px;
+            animation: fadeInDown 0.8s ease;
+        }
+
+        h1 {
+            font-family: 'Varela Round', sans-serif;
+            color: var(--primary-color);
+            font-size: 3em;
+            margin: 0 0 10px 0;
+            text-shadow: 0 4px 12px rgba(255, 102, 170, 0.3);
+        }
+
+        p.subtitle {
+            color: var(--text-muted);
+            font-size: 1.1em;
+        }
+
+        .card {
+            background-color: var(--surface-color);
+            padding: 30px;
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow);
+            margin-bottom: 30px;
+            animation: fadeIn 0.6s ease;
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .full-width {
+            grid-column: 1 / -1;
+        }
+
+        .form-group {
+            margin-bottom: 0;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: var(--secondary-color);
+            font-size: 0.9em;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        input[type="text"],
+        input[type="number"],
+        input[type="password"],
+        select {
+            width: 100%;
+            padding: 12px 16px;
+            border-radius: 8px;
+            border: 2px solid #3a3f42;
+            background-color: #1f2224;
+            color: white;
+            box-sizing: border-box;
+            font-family: 'Exo 2', sans-serif;
+            font-size: 16px;
+            transition: all 0.3s ease;
+        }
+
+        input:focus, select:focus {
+            border-color: var(--primary-color);
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(255, 102, 170, 0.2);
+        }
+
+        .divider {
+            height: 1px;
+            background: linear-gradient(90deg, transparent, #444, transparent);
+            margin: 30px 0;
+            border: none;
+        }
+
+        .mods-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            background: #1f2224;
+            padding: 15px;
+            border-radius: 8px;
+            border: 2px solid #3a3f42;
+        }
+
+        .mod-checkbox {
+            position: relative;
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .mod-checkbox input {
+            position: absolute;
+            opacity: 0;
+            cursor: pointer;
+            height: 0;
+            width: 0;
+        }
+
+        .checkmark {
+            display: inline-block;
+            padding: 6px 14px;
+            background-color: #2a2e30;
+            border-radius: 20px;
+            border: 1px solid #444;
+            color: var(--text-muted);
+            font-weight: 600;
+            font-size: 0.9em;
+            transition: all 0.2s;
+        }
+
+        .mod-checkbox:hover .checkmark {
+            background-color: #33383b;
+            border-color: var(--text-muted);
+        }
+
+        .mod-checkbox input:checked ~ .checkmark {
+            background-color: var(--primary-color);
+            border-color: var(--primary-color);
+            color: white;
+            box-shadow: 0 2px 8px rgba(255, 102, 170, 0.4);
+        }
+
+        .toggle-label {
+            display: flex;
+            gap: 10px;
+            cursor: pointer;
+            font-size: 1em;
+            color: var(--text-color);
+        }
+
+        .btn-search {
+            background: linear-gradient(135deg, var(--primary-color), #ff4da6);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 50px;
+            cursor: pointer;
+            width: 100%;
+            font-size: 18px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            transition: transform 0.2s, box-shadow 0.2s;
+            margin-top: 10px;
+            box-shadow: 0 4px 15px rgba(255, 77, 166, 0.3);
+        }
+
+        .btn-search:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(255, 77, 166, 0.5);
+        }
+
+        .btn-search:active {
+            transform: translateY(1px);
+        }
+
+        #results {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .score-card {
+            position: relative;
+            background-color: var(--surface-color);
+            height: 100px;
+            border-radius: 10px;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+            transition: transform 0.2s;
+            border-left: 6px solid var(--rank-f);
+        }
+
+        .score-card:hover {
+            transform: translateX(5px);
+            background-color: var(--surface-hover);
+        }
+
+        .score-bg {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-size: cover;
+            background-position: center;
+            opacity: 0.15;
+            z-index: 0;
+            mask-image: linear-gradient(to right, rgba(0,0,0,0) 0%, rgba(0,0,0,1) 30%, rgba(0,0,0,1) 100%);
+            -webkit-mask-image: linear-gradient(to right, rgba(0,0,0,0) 0%, rgba(0,0,0,1) 30%, rgba(0,0,0,1) 100%);
+        }
+
+        .score-content {
+            position: relative;
+            z-index: 1;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            width: 100%;
+            padding: 0 20px;
+        }
+
+        .score-info {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .score-title {
+            font-size: 1.1em;
+            font-weight: 700;
+            color: white;
+            text-decoration: none;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.8);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 500px;
+        }
+
+        .score-title:hover {
+            color: var(--secondary-color);
+        }
+
+        .score-meta {
+            font-size: 0.85em;
+            color: #ccc;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .user-link {
+            color: var(--secondary-color);
+            text-decoration: none;
+            font-weight: 600;
+        }
+        .user-link:hover { text-decoration: underline; }
+
+        .score-stats {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .stat-item {
+            text-align: right;
+        }
+
+        .pp-value {
+            font-size: 1.5em;
+            font-weight: 700;
+            color: var(--primary-color);
+            text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+        }
+
+        .rank-badge {
+            font-family: 'Varela Round', sans-serif;
+            font-size: 2.5em;
+            font-weight: 700;
+            width: 60px;
+            text-align: center;
+            margin-right: 15px;
+            filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5));
+        }
+
+        .mod-tag {
+            background: rgba(0,0,0,0.6);
+            padding: 2px 6px;
+            border-radius: 4px;
+            border: 1px solid #555;
+            font-size: 0.75em;
+            font-weight: 600;
+            color: #fff;
+        }
+
+        .no-mod { color: #888; font-size: 0.8em; }
+
+        .error {
+            background-color: rgba(231, 76, 60, 0.2);
+            color: #e74c3c;
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid rgba(231, 76, 60, 0.4);
+            text-align: center;
+        }
+
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes fadeInDown { from { opacity: 0; transform: translateY(-20px); } to { opacity: 1; transform: translateY(0); } }
+
+        @media (max-width: 700px) {
+            .form-grid { grid-template-columns: 1fr; }
+            .score-card { height: auto; padding: 15px 0; }
+            .score-content { flex-direction: column; align-items: flex-start; gap: 10px; }
+            .score-stats { width: 100%; justify-content: space-between; }
+            .score-title { white-space: normal; }
+            .rank-badge { display: none; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <a href="/privacy" style="position: absolute; top: 20px; right: 20px; color: var(--text-muted); text-decoration: none; font-size: 0.9em;">Privacy Policy</a>
+        <header>
+            <h1>osu! Score Retriever</h1>
+            <p class="subtitle">Search for top plays based on PP and Mods</p>
+        </header>
+
+        <div class="card">
+            <form id="searchForm">
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label for="client_id">Client ID</label>
+                        <input type="text" id="client_id" required placeholder="e.g. 12345">
+                    </div>
+                    <div class="form-group">
+                        <label for="client_secret">Client Secret</label>
+                        <input type="password" id="client_secret" required placeholder="••••••••••••">
+                    </div>
+                </div>
+
+                <hr class="divider">
+
+                <div class="form-grid">
+                    <div class="form-group full-width">
+                        <label for="username">Username / User ID</label>
+                        <input type="text" id="username" placeholder="Leave empty for global recent scores">
+                    </div>
+
+                    <div class="form-group" id="type-container">
+                        <label for="type">Score Type</label>
+                        <select id="type">
+                            <option value="best">Best Scores (Top PP)</option>
+                            <option value="recent">Recent Plays (Last 24h)</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group" id="fails-group" style="display: none; align-self: end;">
+                        <label class="toggle-label">
+                            <input type="checkbox" id="include_fails" style="width: auto; margin-right: 8px;">
+                            Include Failed Scores
+                        </label>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="min_pp">Min PP</label>
+                        <input type="number" id="min_pp" step="0.1" placeholder="0">
+                    </div>
+                    <div class="form-group">
+                        <label for="max_pp">Max PP</label>
+                        <input type="number" id="max_pp" step="0.1" placeholder="Infinite">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Mods (Must contain all)</label>
+                    <div class="mods-container">
+                        <label class="mod-checkbox"><input type="checkbox" name="mods" value="DT"><span class="checkmark">DT</span></label>
+                        <label class="mod-checkbox"><input type="checkbox" name="mods" value="NC"><span class="checkmark">NC</span></label>
+                        <label class="mod-checkbox"><input type="checkbox" name="mods" value="HD"><span class="checkmark">HD</span></label>
+                        <label class="mod-checkbox"><input type="checkbox" name="mods" value="HR"><span class="checkmark">HR</span></label>
+                        <label class="mod-checkbox"><input type="checkbox" name="mods" value="FL"><span class="checkmark">FL</span></label>
+                        <label class="mod-checkbox"><input type="checkbox" name="mods" value="SD"><span class="checkmark">SD</span></label>
+                        <label class="mod-checkbox"><input type="checkbox" name="mods" value="PF"><span class="checkmark">PF</span></label>
+                        <label class="mod-checkbox"><input type="checkbox" name="mods" value="EZ"><span class="checkmark">EZ</span></label>
+                        <label class="mod-checkbox"><input type="checkbox" name="mods" value="NF"><span class="checkmark">NF</span></label>
+                        <label class="mod-checkbox"><input type="checkbox" name="mods" value="HT"><span class="checkmark">HT</span></label>
+                        <label class="mod-checkbox"><input type="checkbox" name="mods" value="SO"><span class="checkmark">SO</span></label>
+                    </div>
+                </div>
+
+                <div class="form-group" style="margin-top: 20px;">
+                    <label for="limit">Results Limit (Max 100)</label>
+                    <input type="number" id="limit" value="10" min="1" max="100" style="width: 100px;">
+                </div>
+
+                <button type="submit" class="btn-search">Search Scores</button>
+            </form>
+        </div>
+
+        <div id="results"></div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const savedClientId = localStorage.getItem('osu_client_id');
+            const savedClientSecret = localStorage.getItem('osu_client_secret');
+            if(savedClientId) document.getElementById('client_id').value = savedClientId;
+            if(savedClientSecret) document.getElementById('client_secret').value = savedClientSecret;
+
+            const typeSelect = document.getElementById('type');
+            const failsGroup = document.getElementById('fails-group');
+            const usernameInput = document.getElementById('username');
+            const typeContainer = document.getElementById('type-container');
+
+            function updateUI() {
+                const hasUser = usernameInput.value.trim().length > 0;
+                if(!hasUser) {
+                    typeContainer.style.opacity = '0.5';
+                    typeContainer.style.pointerEvents = 'none';
+                    typeSelect.disabled = true;
+                    failsGroup.style.display = 'none';
+                } else {
+                    typeContainer.style.opacity = '1';
+                    typeContainer.style.pointerEvents = 'auto';
+                    typeSelect.disabled = false;
+                    failsGroup.style.display = typeSelect.value === 'recent' ? 'block' : 'none';
+                }
+            }
+
+            typeSelect.addEventListener('change', updateUI);
+            usernameInput.addEventListener('input', updateUI);
+            updateUI();
+        });
+
+        document.getElementById('searchForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const resultsDiv = document.getElementById('results');
+            resultsDiv.innerHTML = '<div style="text-align:center; padding:40px; color:#aaa;">Searching for circles... <div style="margin-top:10px; font-size:2em;">⌛</div></div>';
+
+            const clientId = document.getElementById('client_id').value;
+            const clientSecret = document.getElementById('client_secret').value;
+
+            localStorage.setItem('osu_client_id', clientId);
+            localStorage.setItem('osu_client_secret', clientSecret);
+
+            const formData = {
+                client_id: clientId,
+                client_secret: clientSecret,
+                username: document.getElementById('username').value.trim(),
+                type: document.getElementById('type').value,
+                include_fails: document.getElementById('include_fails').checked,
+                min_pp: document.getElementById('min_pp').value,
+                max_pp: document.getElementById('max_pp').value,
+                limit: document.getElementById('limit').value,
+                mods: Array.from(document.querySelectorAll('input[name="mods"]:checked')).map(cb => cb.value)
+            };
+
+            try {
+                const response = await fetch('/api/search', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(formData)
+                });
+
+                const data = await response.json();
+
+                if(response.ok) {
+                    displayResults(data);
+                } else {
+                    resultsDiv.innerHTML = `<div class="error"><h3>Error</h3>${data.error || 'Unknown error'}<br><small>${data.details ? JSON.stringify(data.details) : ''}</small></div>`;
+                }
+            } catch(error) {
+                resultsDiv.innerHTML = `<div class="error"><h3>Network Error</h3>${error.message}</div>`;
+            }
+        });
+
+        function displayResults(scores) {
+            const resultsDiv = document.getElementById('results');
+            if(scores.length === 0) {
+                resultsDiv.innerHTML = '<div style="text-align:center; padding:40px; color:#aaa; background:var(--surface-color); border-radius:12px;">No scores found matching criteria.</div>';
+                return;
+            }
+
+            resultsDiv.innerHTML = scores.map((score, index) => {
+                const beatmap = score.beatmap || {};
+                const beatmapset = score.beatmapset || beatmap.beatmapset || {};
+
+                const mapTitle = beatmapset.title || 'Unknown Map';
+                const mapArtist = beatmapset.artist || 'Unknown Artist';
+                const version = beatmap.version || '';
+                const title = `${mapArtist} - ${mapTitle} [${version}]`;
+                const mapUrl = beatmap.id ? `https://osu.ppy.sh/b/${beatmap.id}` : '#';
+
+                let coverUrl = '';
+                if(beatmapset.covers) {
+                    coverUrl = beatmapset.covers.cover || beatmapset.covers['cover@2x'] || beatmapset.covers.card || '';
+                }
+
+                const modsHtml = score.mods && score.mods.length > 0
+                    ? score.mods.map(m => `<span class="mod-tag">${m}</span>`).join('')
+                    : '<span class="no-mod">No Mod</span>';
+
+                const date = new Date(score.created_at).toLocaleDateString();
+                const time = new Date(score.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                const acc = (score.accuracy * 100).toFixed(2);
+                const ppDisplay = score.pp ? `${Math.round(score.pp)}pp` : '-';
+
+                const rank = score.rank;
+                let rankColor = '#7f8c8d';
+                if(['XH', 'SSH'].includes(rank)) rankColor = '#d4af37';
+                else if(['X', 'SS'].includes(rank)) rankColor = '#d4af37';
+                else if(['SH'].includes(rank)) rankColor = '#c0c0c0';
+                else if(['S'].includes(rank)) rankColor = '#ffd700';
+                else if(rank === 'A') rankColor = '#2ea043';
+                else if(rank === 'B') rankColor = '#3498db';
+                else if(rank === 'C') rankColor = '#9b59b6';
+                else if(rank === 'D') rankColor = '#e74c3c';
+                else if(rank === 'F') rankColor = '#e74c3c';
+
+                const userDisplay = score.user
+                    ? `<span style="color:#888">by</span> <a href="https://osu.ppy.sh/users/${score.user.id}" class="user-link" target="_blank">${score.user.username}</a>`
+                    : '';
+
+                return `
+                    <div class="score-card" style="border-left-color: ${rankColor}; animation-delay: ${index * 0.05}s">
+                        <div class="score-bg" style="background-image: url('${coverUrl}');"></div>
+                        <div class="score-content">
+
+                            <div class="rank-badge" style="color: ${rankColor}">${rank}</div>
+
+                            <div class="score-info">
+                                <a href="${mapUrl}" class="score-title" target="_blank" title="${title}">${title}</a>
+                                <div class="score-meta">
+                                    ${modsHtml}
+                                    <span style="margin:0 5px">•</span>
+                                    ${date} ${time}
+                                    <span style="margin:0 5px">•</span>
+                                    ${userDisplay}
+                                </div>
+                            </div>
+
+                            <div class="score-stats">
+                                <div class="stat-item">
+                                    <div class="pp-value" style="color:${rank === 'F' ? '#e74c3c' : '#ff66aa'}">${ppDisplay}</div>
+                                </div>
+                                <div class="stat-item" style="font-size:0.9em; color:#aaa; width:80px;">
+                                    <div>${acc}%</div>
+                                    <div>${score.max_combo}x</div>
+                                </div>
+                            </div>
+
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+    </script>
+</body>
+</html>
