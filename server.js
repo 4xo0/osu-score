@@ -110,6 +110,103 @@ async function fetchUsers(userIds) {
 
 let lastScoreId = 0;
 let recentScores = [];
+let suspiciousScores = [];
+
+async function processScores(scores, checkSuspicious = true) {
+    if (scores.length === 0) return [];
+
+    const missingBeatmapIds = scores
+        .filter(s => !s.beatmap || !s.beatmapset)
+        .map(s => s.beatmap_id);
+
+    const fetchedBeatmaps = await fetchBeatmaps(missingBeatmapIds);
+
+    const missingUserIds = scores
+        .filter(s => !s.user)
+        .map(s => s.user_id);
+
+    await fetchUsers(missingUserIds);
+
+    const processed = [];
+
+    for (let score of scores) {
+        if (!score.created_at && score.ended_at) {
+            score.created_at = score.ended_at;
+        }
+
+        if (!score.beatmap || !score.beatmapset) {
+            const bm = fetchedBeatmaps.find(b => b.id === score.beatmap_id);
+            if (bm) {
+                score.beatmap = bm;
+                score.beatmapset = bm.beatmapset;
+            }
+        }
+
+        if (!score.user) {
+            if (userCache.has(score.user_id)) {
+                score.user = userCache.get(score.user_id);
+            }
+        }
+
+        const mods = score.mods ? score.mods.map(m => m.acronym || m) : [];
+
+        if (checkSuspicious && mods.includes('FL') && score.pp > 100) {
+
+            if (!suspiciousScores.some(s => s.id === score.id)) {
+                suspiciousScores.push(score);
+                io.emit('new_sus_score', score);
+            }
+        }
+
+        processed.push(score);
+    }
+    return processed;
+}
+
+async function fetchHistory() {
+    console.log("Fetching historical scores...");
+    let cursor = null;
+    const MAX_PAGES = 5;
+
+    for (let i = 0; i < MAX_PAGES; i++) {
+        try {
+             const token = await getAccessToken();
+             if (!token) break;
+
+             const params = { ruleset: 'osu', limit: 50 };
+             if (cursor) {
+
+                 Object.assign(params, cursor);
+             }
+
+             const response = await axios.get('https://osu.ppy.sh/api/v2/scores', {
+                headers: { Authorization: `Bearer ${token}`, 'x-api-version': '20220705' },
+                params: params
+             });
+
+             const data = response.data;
+             const scores = data.scores || data;
+
+             if (!scores || !Array.isArray(scores) || scores.length === 0) break;
+
+             if (i === 0 && lastScoreId === 0) {
+                 lastScoreId = Math.max(...scores.map(s => s.id));
+             }
+
+             await processScores(scores, true);
+
+             if (!data.cursor) break;
+             cursor = data.cursor;
+
+             await new Promise(r => setTimeout(r, 1500));
+
+        } catch (e) {
+            console.log("History fetch error:", e.message);
+            break;
+        }
+    }
+    console.log(`History fetch complete. Found ${suspiciousScores.length} suspicious scores so far.`);
+}
 
 async function pollScores() {
     try {
@@ -133,41 +230,7 @@ async function pollScores() {
 
         lastScoreId = Math.max(...newScores.map(s => s.id));
 
-        const missingBeatmapIds = newScores
-            .filter(s => !s.beatmap || !s.beatmapset)
-            .map(s => s.beatmap_id);
-
-        const fetchedBeatmaps = await fetchBeatmaps(missingBeatmapIds);
-
-        const missingUserIds = newScores
-            .filter(s => !s.user)
-            .map(s => s.user_id);
-
-        await fetchUsers(missingUserIds);
-
-        const processedScores = [];
-
-        for (let score of newScores) {
-            if (!score.created_at && score.ended_at) {
-                score.created_at = score.ended_at;
-            }
-
-            if (!score.beatmap || !score.beatmapset) {
-                const bm = fetchedBeatmaps.find(b => b.id === score.beatmap_id);
-                if (bm) {
-                    score.beatmap = bm;
-                    score.beatmapset = bm.beatmapset;
-                }
-            }
-
-            if (!score.user) {
-                if (userCache.has(score.user_id)) {
-                    score.user = userCache.get(score.user_id);
-                }
-            }
-
-            processedScores.push(score);
-        }
+        const processedScores = await processScores(newScores, true);
 
         processedScores.sort((a, b) => a.id - b.id);
 
@@ -183,11 +246,14 @@ async function pollScores() {
     }
 }
 
+fetchHistory();
+
 setInterval(pollScores, 5000);
 
 io.on('connection', (socket) => {
     console.log('Client connected');
     socket.emit('new_scores', recentScores);
+    socket.emit('new_sus_score', suspiciousScores);
     socket.on('disconnect', () => console.log('Client disconnected'));
 });
 
@@ -195,6 +261,15 @@ app.get('/privacy', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'privacy.html'));
 });
 
+app.get('/sus', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'sus.html'));
+});
+
+app.get('/api/sus', (req, res) => {
+    res.json(suspiciousScores);
+});
+
 server.listen(PORT, () => {
     console.log(`Server running on http://localhost:${PORT}`);
 });
+
