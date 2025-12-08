@@ -3,593 +3,738 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>osu! Score Retriever</title>
-    <link href="https://fonts.googleapis.com/css2?family=Varela+Round&family=Exo+2:wght@400;600;700&display=swap" rel="stylesheet">
+    <title>osu!live</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Exo+2:ital,wght@0,400;0,500;0,600;0,700;0,800;1,700&family=Varela+Round&display=swap" rel="stylesheet">
     <style>
         :root {
-            --bg-color: #181a1b;
-            --surface-color: #2a2e30;
-            --surface-hover: #33383b;
-            --primary-color: #ff66aa;
-            --primary-hover: #ff88bb;
-            --secondary-color: #66ccff;
-            --text-color: #f0f0f0;
-            --text-muted: #a0a0a0;
-            --border-radius: 12px;
-            --shadow: 0 8px 24px rgba(0,0,0,0.4);
-            --rank-ss: #d4af37;
-            --rank-s: #ffd700;
-            --rank-a: #2ea043;
-            --rank-b: #3498db;
-            --rank-c: #9b59b6;
-            --rank-d: #e74c3c;
-            --rank-f: #7f8c8d;
+            --bg-color: #0a0e17;
+            --bg-gradient: radial-gradient(circle at 50% 0%, #1a2436 0%, #0a0e17 100%);
+            --card-bg: rgba(30, 35, 45, 0.7);
+            --card-border: rgba(255, 255, 255, 0.08);
+            --card-hover-border: rgba(255, 102, 170, 0.3);
+
+            --accent-pink: #ff66aa;
+            --accent-blue: #66ccff;
+            --accent-purple: #bd93f9;
+            --accent-yellow: #fbbf24;
+
+            --text-main: #ffffff;
+            --text-muted: #94a3b8;
+            --text-dim: #64748b;
+
+            --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+            --glass-border: 1px solid rgba(255, 255, 255, 0.05);
         }
+
+        * { box-sizing: border-box; }
 
         body {
-            font-family: 'Exo 2', sans-serif;
             background-color: var(--bg-color);
-            color: var(--text-color);
+            background: linear-gradient(125deg, #05070a 0%, #0a0e17 40%, #1a2436 100%);
+            background-size: 200% 200%;
+            animation: gradientBG 15s ease infinite;
+            color: var(--text-main);
+            font-family: 'Exo 2', sans-serif;
             margin: 0;
-            padding: 40px 20px;
+            padding: 20px;
             min-height: 100vh;
-            box-sizing: border-box;
-            background-image: radial-gradient(circle at top right, #2a1a20 0%, transparent 40%),
-                              radial-gradient(circle at bottom left, #1a202a 0%, transparent 40%);
+            overflow-x: hidden;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            overflow-anchor: none;
         }
 
-        .container {
-            max-width: 900px;
-            margin: 0 auto;
+        @keyframes gradientBG {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.1); border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.2); }
+
+        #app-container {
+            width: 100%;
+            max-width: 1100px;
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
         }
 
         header {
-            text-align: center;
-            margin-bottom: 40px;
-            animation: fadeInDown 0.8s ease;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+            padding: 10px 0;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+            margin-bottom: 10px;
+        }
+
+        .brand {
+            display: flex;
+            flex-direction: column;
         }
 
         h1 {
             font-family: 'Varela Round', sans-serif;
-            color: var(--primary-color);
-            font-size: 3em;
-            margin: 0 0 10px 0;
-            text-shadow: 0 4px 12px rgba(255, 102, 170, 0.3);
+            font-size: 3rem;
+            margin: 0;
+            line-height: 1;
+            background: linear-gradient(135deg, var(--accent-pink) 0%, #ff88bb 50%, var(--accent-blue) 100%);
+            background-size: 200% auto;
+            animation: titleGradient 5s ease infinite alternate;
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-shadow: 0 10px 30px rgba(255, 102, 170, 0.15);
+            letter-spacing: -1px;
         }
 
-        p.subtitle {
+        @keyframes titleGradient {
+            0% { background-position: 0% 50%; }
+            100% { background-position: 100% 50%; }
+        }
+
+        .subtitle {
             color: var(--text-muted);
-            font-size: 1.1em;
-        }
-
-        .card {
-            background-color: var(--surface-color);
-            padding: 30px;
-            border-radius: var(--border-radius);
-            box-shadow: var(--shadow);
-            margin-bottom: 30px;
-            animation: fadeIn 0.6s ease;
-        }
-
-        .form-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 20px;
-            margin-bottom: 20px;
-        }
-
-        .full-width {
-            grid-column: 1 / -1;
-        }
-
-        .form-group {
-            margin-bottom: 0;
-        }
-
-        label {
-            display: block;
-            margin-bottom: 8px;
-            font-weight: 600;
-            color: var(--secondary-color);
-            font-size: 0.9em;
+            font-size: 0.9rem;
+            font-weight: 500;
+            letter-spacing: 2px;
             text-transform: uppercase;
-            letter-spacing: 0.5px;
+            margin-top: 6px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
         }
 
-        input[type="text"],
-        input[type="number"],
-        input[type="password"],
-        select {
-            width: 100%;
-            padding: 12px 16px;
-            border-radius: 8px;
-            border: 2px solid #3a3f42;
-            background-color: #1f2224;
-            color: white;
-            box-sizing: border-box;
-            font-family: 'Exo 2', sans-serif;
-            font-size: 16px;
+        .live-badge {
+            display: inline-block;
+            width: 6px;
+            height: 6px;
+            background-color: #ef4444;
+            border-radius: 50%;
+            box-shadow: 0 0 10px #ef4444;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 1; box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); }
+            70% { opacity: 0.7; box-shadow: 0 0 0 6px rgba(239, 68, 68, 0); }
+            100% { opacity: 1; box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+        }
+
+        #status-bar {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            font-size: 0.85rem;
+            color: var(--text-dim);
+            background: rgba(255, 255, 255, 0.03);
+            padding: 8px 16px;
+            border-radius: 20px;
+            border: 1px solid rgba(255,255,255,0.05);
+        }
+
+        .status-indicator {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background-color: #2ea043;
+            box-shadow: 0 0 8px rgba(46, 160, 67, 0.5);
             transition: all 0.3s ease;
         }
 
-        input:focus, select:focus {
-            border-color: var(--primary-color);
-            outline: none;
-            box-shadow: 0 0 0 3px rgba(255, 102, 170, 0.2);
-        }
-
-        .divider {
-            height: 1px;
-            background: linear-gradient(90deg, transparent, #444, transparent);
-            margin: 30px 0;
-            border: none;
-        }
-
-        .mods-container {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 10px;
-            background: #1f2224;
-            padding: 15px;
-            border-radius: 8px;
-            border: 2px solid #3a3f42;
-        }
-
-        .mod-checkbox {
-            position: relative;
-            cursor: pointer;
-            user-select: none;
-        }
-
-        .mod-checkbox input {
-            position: absolute;
-            opacity: 0;
-            cursor: pointer;
-            height: 0;
-            width: 0;
-        }
-
-        .checkmark {
-            display: inline-block;
-            padding: 6px 14px;
-            background-color: #2a2e30;
+        #controls {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 16px;
+            background: rgba(30, 35, 45, 0.4);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            padding: 20px;
             border-radius: 20px;
-            border: 1px solid #444;
-            color: var(--text-muted);
-            font-weight: 600;
-            font-size: 0.9em;
-            transition: all 0.2s;
+            border: var(--glass-border);
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
         }
 
-        .mod-checkbox:hover .checkmark {
-            background-color: #33383b;
-            border-color: var(--text-muted);
-        }
-
-        .mod-checkbox input:checked ~ .checkmark {
-            background-color: var(--primary-color);
-            border-color: var(--primary-color);
-            color: white;
-            box-shadow: 0 2px 8px rgba(255, 102, 170, 0.4);
-        }
-
-        .toggle-label {
-            display: flex;
-            gap: 10px;
-            cursor: pointer;
-            font-size: 1em;
-            color: var(--text-color);
-        }
-
-        .btn-search {
-            background: linear-gradient(135deg, var(--primary-color), #ff4da6);
-            color: white;
-            border: none;
-            padding: 15px 30px;
-            border-radius: 50px;
-            cursor: pointer;
-            width: 100%;
-            font-size: 18px;
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            transition: transform 0.2s, box-shadow 0.2s;
-            margin-top: 10px;
-            box-shadow: 0 4px 15px rgba(255, 77, 166, 0.3);
-        }
-
-        .btn-search:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(255, 77, 166, 0.5);
-        }
-
-        .btn-search:active {
-            transform: translateY(1px);
-        }
-
-        #results {
+        .input-group {
             display: flex;
             flex-direction: column;
-            gap: 15px;
+            gap: 8px;
+        }
+
+        .input-group label {
+            color: var(--text-muted);
+            font-size: 0.75rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-left: 4px;
+        }
+
+        .input-wrapper {
+            position: relative;
+            display: flex;
+            align-items: center;
+        }
+
+        input {
+            width: 100%;
+            background: rgba(0, 0, 0, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: white;
+            padding: 12px 16px;
+            border-radius: 12px;
+            font-family: 'Exo 2', sans-serif;
+            font-size: 0.95rem;
+            font-weight: 500;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        input:hover {
+            background: rgba(0, 0, 0, 0.3);
+            border-color: rgba(255, 255, 255, 0.2);
+        }
+
+        input:focus {
+            outline: none;
+            background: rgba(0, 0, 0, 0.4);
+            border-color: var(--accent-pink);
+            box-shadow: 0 0 0 4px rgba(255, 102, 170, 0.1);
+        }
+
+        input::placeholder { color: rgba(255,255,255,0.2); }
+
+        .range-inputs {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .range-sep { color: var(--text-dim); }
+
+        #feed {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            padding-bottom: 40px;
         }
 
         .score-card {
             position: relative;
-            background-color: var(--surface-color);
-            height: 100px;
-            border-radius: 10px;
+            height: 120px;
+            background: var(--card-bg);
+            border-radius: 18px;
             overflow: hidden;
             display: flex;
             align-items: center;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
-            transition: transform 0.2s;
-            border-left: 6px solid var(--rank-f);
+            padding: 0 24px;
+            border: var(--card-border);
+            opacity: 0;
+            transform-origin: center;
+            will-change: transform, opacity, filter;
+            transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.4s ease, border-color 0.4s ease;
+            cursor: pointer;
+            text-decoration: none;
+            color: inherit;
         }
 
         .score-card:hover {
-            transform: translateX(5px);
-            background-color: var(--surface-hover);
+            transform: scale(1.02) translateY(-2px);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.4);
+            border-color: var(--card-hover-border);
+            z-index: 10;
         }
 
-        .score-bg {
+        .score-card::after {
+            content: "";
             position: absolute;
             top: 0;
-            left: 0;
+            left: -100%;
+            width: 50%;
+            height: 100%;
+            background: linear-gradient(
+                to right,
+                rgba(255, 255, 255, 0) 0%,
+                rgba(255, 255, 255, 0.05) 50%,
+                rgba(255, 255, 255, 0) 100%
+            );
+            transform: skewX(-25deg);
+            transition: none;
+            pointer-events: none;
+            z-index: 5;
+        }
+
+        .score-card:hover::after {
+            animation: shimmer 1s;
+        }
+
+        @keyframes shimmer {
+            100% { left: 150%; }
+        }
+
+        .card-bg-layer {
+            position: absolute;
+            inset: 0;
+            z-index: 0;
+            transition: opacity 0.4s ease;
+        }
+
+        .card-image {
             width: 100%;
             height: 100%;
             background-size: cover;
             background-position: center;
-            opacity: 0.15;
-            z-index: 0;
-            mask-image: linear-gradient(to right, rgba(0,0,0,0) 0%, rgba(0,0,0,1) 30%, rgba(0,0,0,1) 100%);
-            -webkit-mask-image: linear-gradient(to right, rgba(0,0,0,0) 0%, rgba(0,0,0,1) 30%, rgba(0,0,0,1) 100%);
+            opacity: 0.4;
+            filter: blur(1px) grayscale(20%);
+            transition: all 0.4s ease;
         }
 
-        .score-content {
-            position: relative;
+        .score-card:hover .card-image {
+            opacity: 0.55;
+            filter: blur(0) grayscale(0%);
+            transform: scale(1.05);
+        }
+
+        .card-gradient {
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(90deg,
+                rgba(10, 14, 23, 0.97) 0%,
+                rgba(10, 14, 23, 0.92) 35%,
+                rgba(10, 14, 23, 0.6) 100%);
             z-index: 1;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            width: 100%;
-            padding: 0 20px;
         }
 
-        .score-info {
-            flex: 1;
+        .card-content {
+            position: relative;
+            z-index: 2;
+            display: flex;
+            width: 100%;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .user-section {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            width: 35%;
+            min-width: 300px;
+        }
+
+        .avatar-wrapper {
+            position: relative;
+            flex-shrink: 0;
+        }
+
+        .avatar {
+            width: 72px;
+            height: 72px;
+            border-radius: 16px;
+            object-fit: cover;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+            border: 2px solid rgba(255,255,255,0.1);
+        }
+
+        .rank-badge {
+            position: absolute;
+            bottom: -8px;
+            right: -8px;
+            background: #1a1a1a;
+            color: #fff;
+            font-family: 'Varela Round', sans-serif;
+            font-weight: 700;
+            font-size: 0.8rem;
+            padding: 3px 8px;
+            border-radius: 8px;
+            border: 1px solid rgba(255,255,255,0.2);
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+            z-index: 2;
+        }
+
+        .user-details {
             display: flex;
             flex-direction: column;
             gap: 4px;
         }
 
-        .score-title {
-            font-size: 1.1em;
+        .username {
             font-weight: 700;
-            color: white;
+            font-size: 1.4rem;
+            color: var(--text-main);
             text-decoration: none;
-            text-shadow: 0 2px 4px rgba(0,0,0,0.8);
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            max-width: 500px;
+            line-height: 1.2;
+            transition: color 0.2s;
         }
 
-        .score-title:hover {
-            color: var(--secondary-color);
-        }
+        .username:hover { color: var(--accent-pink); }
 
-        .score-meta {
-            font-size: 0.85em;
-            color: #ccc;
+        .score-row {
             display: flex;
             align-items: center;
-            gap: 10px;
-        }
-
-        .user-link {
-            color: var(--secondary-color);
-            text-decoration: none;
-            font-weight: 600;
-        }
-        .user-link:hover { text-decoration: underline; }
-
-        .score-stats {
-            display: flex;
-            align-items: center;
-            gap: 15px;
-        }
-
-        .stat-item {
-            text-align: right;
+            gap: 12px;
         }
 
         .pp-value {
-            font-size: 1.5em;
+            font-family: 'Varela Round', sans-serif;
             font-weight: 700;
-            color: var(--primary-color);
-            text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+            font-size: 1.2rem;
+            background: linear-gradient(90deg, var(--accent-pink), #ff99cc);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
         }
 
-        .rank-badge {
-            font-family: 'Varela Round', sans-serif;
-            font-size: 2.5em;
-            font-weight: 700;
-            width: 60px;
-            text-align: center;
-            margin-right: 15px;
-            filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5));
+        .mods-container {
+            display: flex;
+            gap: 4px;
         }
 
         .mod-tag {
-            background: rgba(0,0,0,0.6);
+            background: rgba(255, 255, 255, 0.1);
+            color: #e2e8f0;
+            font-size: 0.7rem;
+            font-weight: 700;
             padding: 2px 6px;
-            border-radius: 4px;
-            border: 1px solid #555;
-            font-size: 0.75em;
-            font-weight: 600;
-            color: #fff;
+            border-radius: 6px;
+            border: 1px solid rgba(255,255,255,0.05);
         }
 
-        .no-mod { color: #888; font-size: 0.8em; }
-
-        .error {
-            background-color: rgba(231, 76, 60, 0.2);
-            color: #e74c3c;
-            padding: 15px;
-            border-radius: 8px;
-            border: 1px solid rgba(231, 76, 60, 0.4);
-            text-align: center;
+        .map-section {
+            flex-grow: 1;
+            padding: 0 20px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            border-left: 1px solid rgba(255,255,255,0.05);
+            border-right: 1px solid rgba(255,255,255,0.05);
+            margin: 0 20px;
+            height: 70px;
         }
 
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-        @keyframes fadeInDown { from { opacity: 0; transform: translateY(-20px); } to { opacity: 1; transform: translateY(0); } }
+        .map-title {
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: #f1f5f9;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            margin-bottom: 4px;
+        }
 
-        @media (max-width: 700px) {
-            .form-grid { grid-template-columns: 1fr; }
-            .score-card { height: auto; padding: 15px 0; }
-            .score-content { flex-direction: column; align-items: flex-start; gap: 10px; }
-            .score-stats { width: 100%; justify-content: space-between; }
-            .score-title { white-space: normal; }
-            .rank-badge { display: none; }
+        .map-artist {
+            font-size: 0.95rem;
+            color: var(--text-muted);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .map-version {
+            font-size: 0.85rem;
+            color: var(--text-dim);
+            margin-top: 2px;
+        }
+
+        .star-rating {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            color: var(--accent-yellow);
+            font-weight: 700;
+            font-size: 0.9rem;
+            margin-left: 10px;
+            background: rgba(251, 191, 36, 0.1);
+            padding: 2px 8px;
+            border-radius: 12px;
+            border: 1px solid rgba(251, 191, 36, 0.2);
+        }
+
+        .stats-section {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            gap: 8px;
+            width: 120px;
+            flex-shrink: 0;
+        }
+
+        .accuracy {
+            font-family: 'Varela Round', sans-serif;
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--accent-blue);
+            text-shadow: 0 0 20px rgba(102, 204, 255, 0.2);
+        }
+
+        .time-ago {
+            font-size: 0.8rem;
+            color: var(--text-dim);
+            font-weight: 500;
+            background: rgba(0,0,0,0.3);
+            padding: 4px 10px;
+            border-radius: 20px;
+        }
+
+        @keyframes slideIn {
+            0% {
+                opacity: 0;
+                transform: translateY(20px) scale(0.96);
+                filter: blur(4px);
+            }
+            100% {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+                filter: blur(0);
+            }
+        }
+
+        @media (max-width: 900px) {
+            .score-card { height: auto; padding: 20px; flex-direction: column; gap: 16px; }
+            .card-gradient { background: linear-gradient(180deg, rgba(10,14,23,0.95) 0%, rgba(10,14,23,0.9) 100%); }
+            .user-section, .map-section, .stats-section { width: 100%; border: none; margin: 0; padding: 0; align-items: flex-start; }
+            .map-section { height: auto; padding: 10px 0; border-top: 1px solid rgba(255,255,255,0.05); border-bottom: 1px solid rgba(255,255,255,0.05); }
+            .stats-section { flex-direction: row; justify-content: space-between; align-items: center; }
+            h1 { font-size: 2.2rem; }
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <a href="/privacy" style="position: absolute; top: 20px; right: 20px; color: var(--text-muted); text-decoration: none; font-size: 0.9em;">Privacy Policy</a>
+    <div id="app-container">
         <header>
-            <h1>osu! Score Retriever</h1>
-            <p class="subtitle">Search for top plays based on PP and Mods</p>
+            <div class="brand">
+                <h1>osu!live</h1>
+                <div class="subtitle"><span class="live-badge"></span> REAL-TIME FEED</div>
+            </div>
+
+            <div id="status-bar">
+                <div class="status-indicator">
+                    <span class="status-dot"></span>
+                    <span id="status-text">Connected</span>
+                </div>
+                <div id="connection-count" style="color: var(--text-muted)">● 1</div>
+            </div>
         </header>
 
-        <div class="card">
-            <form id="searchForm">
-                <div class="form-grid">
-                    <div class="form-group">
-                        <label for="client_id">Client ID</label>
-                        <input type="text" id="client_id" required placeholder="e.g. 12345">
-                    </div>
-                    <div class="form-group">
-                        <label for="client_secret">Client Secret</label>
-                        <input type="password" id="client_secret" required placeholder="••••••••••••">
-                    </div>
+        <div id="controls">
+            <div class="input-group">
+                <label>PP Range</label>
+                <div class="range-inputs">
+                    <input type="number" id="min-pp" placeholder="Min" style="width: 80px">
+                    <span class="range-sep">to</span>
+                    <input type="number" id="max-pp" placeholder="Max" style="width: 80px">
                 </div>
-
-                <hr class="divider">
-
-                <div class="form-grid">
-                    <div class="form-group full-width">
-                        <label for="username">Username / User ID</label>
-                        <input type="text" id="username" placeholder="Leave empty for global recent scores">
-                    </div>
-
-                    <div class="form-group" id="type-container">
-                        <label for="type">Score Type</label>
-                        <select id="type">
-                            <option value="best">Best Scores (Top PP)</option>
-                            <option value="recent">Recent Plays (Last 24h)</option>
-                        </select>
-                    </div>
-
-                    <div class="form-group" id="fails-group" style="display: none; align-self: end;">
-                        <label class="toggle-label">
-                            <input type="checkbox" id="include_fails" style="width: auto; margin-right: 8px;">
-                            Include Failed Scores
-                        </label>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="min_pp">Min PP</label>
-                        <input type="number" id="min_pp" step="0.1" placeholder="0">
-                    </div>
-                    <div class="form-group">
-                        <label for="max_pp">Max PP</label>
-                        <input type="number" id="max_pp" step="0.1" placeholder="Infinite">
-                    </div>
+            </div>
+            <div class="input-group">
+                <label>Mods</label>
+                <div class="input-wrapper">
+                    <input type="text" id="mods-filter" placeholder="e.g. HDDT">
                 </div>
-
-                <div class="form-group">
-                    <label>Mods (Must contain all)</label>
-                    <div class="mods-container">
-                        <label class="mod-checkbox"><input type="checkbox" name="mods" value="DT"><span class="checkmark">DT</span></label>
-                        <label class="mod-checkbox"><input type="checkbox" name="mods" value="NC"><span class="checkmark">NC</span></label>
-                        <label class="mod-checkbox"><input type="checkbox" name="mods" value="HD"><span class="checkmark">HD</span></label>
-                        <label class="mod-checkbox"><input type="checkbox" name="mods" value="HR"><span class="checkmark">HR</span></label>
-                        <label class="mod-checkbox"><input type="checkbox" name="mods" value="FL"><span class="checkmark">FL</span></label>
-                        <label class="mod-checkbox"><input type="checkbox" name="mods" value="SD"><span class="checkmark">SD</span></label>
-                        <label class="mod-checkbox"><input type="checkbox" name="mods" value="PF"><span class="checkmark">PF</span></label>
-                        <label class="mod-checkbox"><input type="checkbox" name="mods" value="EZ"><span class="checkmark">EZ</span></label>
-                        <label class="mod-checkbox"><input type="checkbox" name="mods" value="NF"><span class="checkmark">NF</span></label>
-                        <label class="mod-checkbox"><input type="checkbox" name="mods" value="HT"><span class="checkmark">HT</span></label>
-                        <label class="mod-checkbox"><input type="checkbox" name="mods" value="SO"><span class="checkmark">SO</span></label>
-                    </div>
+            </div>
+            <div class="input-group">
+                <label>Player</label>
+                <div class="input-wrapper">
+                    <input type="text" id="user-filter" placeholder="Username">
                 </div>
-
-                <div class="form-group" style="margin-top: 20px;">
-                    <label for="limit">Results Limit (Max 100)</label>
-                    <input type="number" id="limit" value="10" min="1" max="100" style="width: 100px;">
+            </div>
+            <div class="input-group" style="flex-grow: 2">
+                <label>Map</label>
+                <div class="input-wrapper">
+                    <input type="text" id="map-filter" placeholder="Title or Artist">
                 </div>
-
-                <button type="submit" class="btn-search">Search Scores</button>
-            </form>
+            </div>
         </div>
 
-        <div id="results"></div>
+        <div id="feed"></div>
     </div>
 
+    <script src="/socket.io/socket.io.js"></script>
     <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            const savedClientId = localStorage.getItem('osu_client_id');
-            const savedClientSecret = localStorage.getItem('osu_client_secret');
-            if(savedClientId) document.getElementById('client_id').value = savedClientId;
-            if(savedClientSecret) document.getElementById('client_secret').value = savedClientSecret;
+        const socket = io();
+        const feed = document.getElementById('feed');
+        const MAX_ITEMS = 50;
 
-            const typeSelect = document.getElementById('type');
-            const failsGroup = document.getElementById('fails-group');
-            const usernameInput = document.getElementById('username');
-            const typeContainer = document.getElementById('type-container');
+        const filters = {
+            minPp: document.getElementById('min-pp'),
+            maxPp: document.getElementById('max-pp'),
+            mods: document.getElementById('mods-filter'),
+            user: document.getElementById('user-filter'),
+            map: document.getElementById('map-filter')
+        };
 
-            function updateUI() {
-                const hasUser = usernameInput.value.trim().length > 0;
-                if(!hasUser) {
-                    typeContainer.style.opacity = '0.5';
-                    typeContainer.style.pointerEvents = 'none';
-                    typeSelect.disabled = true;
-                    failsGroup.style.display = 'none';
-                } else {
-                    typeContainer.style.opacity = '1';
-                    typeContainer.style.pointerEvents = 'auto';
-                    typeSelect.disabled = false;
-                    failsGroup.style.display = typeSelect.value === 'recent' ? 'block' : 'none';
-                }
-            }
+        const statusDot = document.querySelector('.status-dot');
+        const statusText = document.getElementById('status-text');
 
-            typeSelect.addEventListener('change', updateUI);
-            usernameInput.addEventListener('input', updateUI);
-            updateUI();
+        socket.on('connect', () => {
+            statusDot.style.backgroundColor = '#2ea043';
+            statusDot.style.boxShadow = '0 0 8px rgba(46, 160, 67, 0.5)';
+            statusText.textContent = 'Connected';
+            statusText.style.color = '#2ea043';
         });
 
-        document.getElementById('searchForm').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const resultsDiv = document.getElementById('results');
-            resultsDiv.innerHTML = '<div style="text-align:center; padding:40px; color:#aaa;">Searching for circles... <div style="margin-top:10px; font-size:2em;">⌛</div></div>';
+        socket.on('disconnect', () => {
+            statusDot.style.backgroundColor = '#ef4444';
+            statusDot.style.boxShadow = '0 0 8px rgba(239, 68, 68, 0.5)';
+            statusText.textContent = 'Disconnected';
+            statusText.style.color = '#ef4444';
+        });
 
-            const clientId = document.getElementById('client_id').value;
-            const clientSecret = document.getElementById('client_secret').value;
+        socket.on('new_scores', (scores) => {
+            let orderedScores = [...scores].reverse();
 
-            localStorage.setItem('osu_client_id', clientId);
-            localStorage.setItem('osu_client_secret', clientSecret);
+            if (orderedScores.length > MAX_ITEMS) {
+                orderedScores = orderedScores.slice(0, MAX_ITEMS);
+            }
 
-            const formData = {
-                client_id: clientId,
-                client_secret: clientSecret,
-                username: document.getElementById('username').value.trim(),
-                type: document.getElementById('type').value,
-                include_fails: document.getElementById('include_fails').checked,
-                min_pp: document.getElementById('min_pp').value,
-                max_pp: document.getElementById('max_pp').value,
-                limit: document.getElementById('limit').value,
-                mods: Array.from(document.querySelectorAll('input[name="mods"]:checked')).map(cb => cb.value)
+            const delay = orderedScores.length > 5 ? 100 : 80;
+
+            orderedScores.forEach((score, index) => {
+                setTimeout(() => {
+                    requestAnimationFrame(() => renderScore(score));
+                }, index * delay);
+            });
+        });
+
+        function getRankColor(rank) {
+            const colors = {
+                'XH': '#ef4444', 'SSH': '#ef4444',
+                'X': '#fbbf24',  'SS': '#fbbf24',
+                'SH': '#94a3b8',
+                'S': '#fbbf24',
+                'A': '#2ea043',
+                'B': '#3b82f6',
+                'C': '#a855f7',
+                'D': '#ef4444', 'F': '#ef4444'
+            };
+            return colors[rank] || '#64748b';
+        }
+
+        function timeSince(dateString) {
+            if (!dateString) return '';
+            const date = new Date(dateString);
+            if (isNaN(date.getTime())) return '';
+            const seconds = Math.floor((new Date() - date) / 1000);
+            if (seconds < 60) return seconds + "s";
+            const minutes = Math.floor(seconds / 60);
+            if (minutes < 60) return minutes + "m";
+            const hours = Math.floor(minutes / 60);
+            if (hours < 24) return hours + "h";
+            return Math.floor(hours / 24) + "d";
+        }
+
+        function renderScore(score) {
+            const minPp = parseFloat(filters.minPp.value) || 0;
+            const maxPp = parseFloat(filters.maxPp.value) || Infinity;
+            const modFilter = filters.mods.value.toUpperCase();
+            const userFilter = filters.user.value.trim().toLowerCase();
+            const mapFilter = filters.map.value.trim().toLowerCase();
+
+            const pp = score.pp || 0;
+            const modsList = score.mods.map(m => m.acronym || m);
+            const modsString = modsList.join('');
+
+            const username = score.user ? score.user.username : 'Unknown';
+            const userId = score.user_id;
+            const mapTitle = score.beatmapset ? score.beatmapset.title : 'Unknown Map';
+            const mapArtist = score.beatmapset ? score.beatmapset.artist : 'Unknown Artist';
+            const mapVersion = score.beatmap ? score.beatmap.version : '';
+            const scoreId = score.id;
+            const stars = score.beatmap ? score.beatmap.difficulty_rating : 0;
+
+            if (pp < minPp || pp > maxPp) return;
+            if (modFilter && !modsString.includes(modFilter)) return;
+            if (userFilter && username.toLowerCase() !== userFilter && userId.toString() !== userFilter) return;
+            if (mapFilter && !mapTitle.toLowerCase().includes(mapFilter) && !mapArtist.toLowerCase().includes(mapFilter)) return;
+
+            const scrollPos = window.scrollY;
+            const isScrolledDown = scrollPos > 20;
+
+            const card = document.createElement('div');
+            card.className = 'score-card';
+
+            const scoreUrl = `https://osu.ppy.sh/scores/${scoreId}`;
+            const userUrl = `https://osu.ppy.sh/users/${userId}`;
+
+            card.onclick = function(e) {
+                if (e.target.closest('.user-link')) return;
+                window.open(scoreUrl, '_blank');
             };
 
-            try {
-                const response = await fetch('/api/search', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(formData)
-                });
+            card.style.animation = 'slideIn 0.8s cubic-bezier(0.25, 0.8, 0.25, 1) forwards';
 
-                const data = await response.json();
+            const rankColor = getRankColor(score.rank);
 
-                if(response.ok) {
-                    displayResults(data);
-                } else {
-                    resultsDiv.innerHTML = `<div class="error"><h3>Error</h3>${data.error || 'Unknown error'}<br><small>${data.details ? JSON.stringify(data.details) : ''}</small></div>`;
-                }
-            } catch(error) {
-                resultsDiv.innerHTML = `<div class="error"><h3>Network Error</h3>${error.message}</div>`;
-            }
-        });
-
-        function displayResults(scores) {
-            const resultsDiv = document.getElementById('results');
-            if(scores.length === 0) {
-                resultsDiv.innerHTML = '<div style="text-align:center; padding:40px; color:#aaa; background:var(--surface-color); border-radius:12px;">No scores found matching criteria.</div>';
-                return;
+            let coverUrl = '';
+            if (score.beatmapset && score.beatmapset.covers) {
+                coverUrl = score.beatmapset.covers.cover || score.beatmapset.covers['cover@2x'] || '';
             }
 
-            resultsDiv.innerHTML = scores.map((score, index) => {
-                const beatmap = score.beatmap || {};
-                const beatmapset = score.beatmapset || beatmap.beatmapset || {};
+            const avatarUrl = score.user ? score.user.avatar_url : 'https://a.ppy.sh/';
+            const modsHtml = modsList.map(m => `<span class="mod-tag">${m}</span>`).join('');
+            const accuracy = (score.accuracy * 100).toFixed(2) + '%';
+            const ppFormatted = Math.round(pp).toLocaleString();
 
-                const mapTitle = beatmapset.title || 'Unknown Map';
-                const mapArtist = beatmapset.artist || 'Unknown Artist';
-                const version = beatmap.version || '';
-                const title = `${mapArtist} - ${mapTitle} [${version}]`;
-                const mapUrl = beatmap.id ? `https://osu.ppy.sh/b/${beatmap.id}` : '#';
+            card.innerHTML = `
+                <div class="card-bg-layer">
+                    <div class="card-image" style="background-image: url('${coverUrl}')"></div>
+                    <div class="card-gradient"></div>
+                </div>
 
-                let coverUrl = '';
-                if(beatmapset.covers) {
-                    coverUrl = beatmapset.covers.cover || beatmapset.covers['cover@2x'] || beatmapset.covers.card || '';
-                }
-
-                const modsHtml = score.mods && score.mods.length > 0
-                    ? score.mods.map(m => `<span class="mod-tag">${m}</span>`).join('')
-                    : '<span class="no-mod">No Mod</span>';
-
-                const date = new Date(score.created_at).toLocaleDateString();
-                const time = new Date(score.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-                const acc = (score.accuracy * 100).toFixed(2);
-                const ppDisplay = score.pp ? `${Math.round(score.pp)}pp` : '-';
-
-                const rank = score.rank;
-                let rankColor = '#7f8c8d';
-                if(['XH', 'SSH'].includes(rank)) rankColor = '#d4af37';
-                else if(['X', 'SS'].includes(rank)) rankColor = '#d4af37';
-                else if(['SH'].includes(rank)) rankColor = '#c0c0c0';
-                else if(['S'].includes(rank)) rankColor = '#ffd700';
-                else if(rank === 'A') rankColor = '#2ea043';
-                else if(rank === 'B') rankColor = '#3498db';
-                else if(rank === 'C') rankColor = '#9b59b6';
-                else if(rank === 'D') rankColor = '#e74c3c';
-                else if(rank === 'F') rankColor = '#e74c3c';
-
-                const userDisplay = score.user
-                    ? `<span style="color:#888">by</span> <a href="https://osu.ppy.sh/users/${score.user.id}" class="user-link" target="_blank">${score.user.username}</a>`
-                    : '';
-
-                return `
-                    <div class="score-card" style="border-left-color: ${rankColor}; animation-delay: ${index * 0.05}s">
-                        <div class="score-bg" style="background-image: url('${coverUrl}');"></div>
-                        <div class="score-content">
-
-                            <div class="rank-badge" style="color: ${rankColor}">${rank}</div>
-
-                            <div class="score-info">
-                                <a href="${mapUrl}" class="score-title" target="_blank" title="${title}">${title}</a>
-                                <div class="score-meta">
-                                    ${modsHtml}
-                                    <span style="margin:0 5px">•</span>
-                                    ${date} ${time}
-                                    <span style="margin:0 5px">•</span>
-                                    ${userDisplay}
+                <div class="card-content">
+                    <div class="user-section">
+                        <a href="${userUrl}" target="_blank" class="user-link" style="display: flex; gap: 20px; align-items: center; text-decoration: none; color: inherit;">
+                            <div class="avatar-wrapper">
+                                <img src="${avatarUrl}" class="avatar" alt="${username}">
+                                <div class="rank-badge" style="color: ${rankColor}; border-color: ${rankColor}">${score.rank}</div>
+                            </div>
+                            <div class="user-details">
+                                <span class="username">${username}</span>
+                                <div class="score-row">
+                                    <span class="pp-value">${ppFormatted}pp</span>
+                                    <div class="mods-container">${modsHtml}</div>
                                 </div>
                             </div>
+                        </a>
+                    </div>
 
-                            <div class="score-stats">
-                                <div class="stat-item">
-                                    <div class="pp-value" style="color:${rank === 'F' ? '#e74c3c' : '#ff66aa'}">${ppDisplay}</div>
-                                </div>
-                                <div class="stat-item" style="font-size:0.9em; color:#aaa; width:80px;">
-                                    <div>${acc}%</div>
-                                    <div>${score.max_combo}x</div>
-                                </div>
-                            </div>
-
+                    <div class="map-section">
+                        <div class="map-title">${mapTitle}</div>
+                        <div class="map-artist">${mapArtist}</div>
+                        <div class="map-version">
+                            ${mapVersion}
+                            ${stars > 0 ? `<span class="star-rating">★ ${stars.toFixed(2)}</span>` : ''}
                         </div>
                     </div>
-                `;
-            }).join('');
+
+                    <div class="stats-section">
+                        <div class="accuracy" style="color: ${getRankColor(score.rank)}">${accuracy}</div>
+                        <div class="time-ago">${timeSince(score.created_at)} ago</div>
+                    </div>
+                </div>
+            `;
+
+            feed.insertBefore(card, feed.firstChild);
+
+            if (isScrolledDown) {
+                const cardHeight = 120 + 16;
+                window.scrollTo(0, scrollPos + cardHeight);
+            }
+
+            if (feed.children.length > MAX_ITEMS) {
+                feed.removeChild(feed.lastChild);
+            }
         }
     </script>
 </body>

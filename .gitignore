@@ -1,4 +1,6 @@
 node_modules/
 .npm/
 .vscode/
+.claude/
+.env
 docs.txt
